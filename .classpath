@@ -6,6 +6,8 @@
     <classpathentry kind="output" path="bin/src"/>
     
                 <classpathentry kind="lib" path="lib/junit-4.5.jar"/>
+				<classpathentry kind="lib" path="lib/zql.jar"/>
+				<classpathentry kind="lib" path="lib/jline-0.9.94.jar"/>
             
         </classpath>
     
