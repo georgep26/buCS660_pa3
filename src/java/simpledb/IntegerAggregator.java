@@ -1,11 +1,23 @@
 package simpledb;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+
+    private int gbfield;
+    private int afield;
+    private Type gbfieldtype;
+    private Op what;
+    private Integer aggregatedValue;
+    private Integer mergedCount;
+    private HashMap<String, Integer> aggregatedValues;
 
     /**
      * Aggregate constructor
@@ -23,7 +35,12 @@ public class IntegerAggregator implements Aggregator {
      */
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
-        // some code goes here
+        this.gbfield = gbfield;
+        this.afield = afield;
+        this.gbfieldtype = gbfieldtype;
+        this.what = what;
+        mergedCount = 0;
+        aggregatedValues = new HashMap<>();
     }
 
     /**
@@ -35,6 +52,61 @@ public class IntegerAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+        // for the passed aggregation column and aggregator, add tuple to an aggregated field
+        // field is of type int
+        // TODO: switch from one value to adding to hash map according to which group we are currently calculating
+
+        IntField intField = (IntField) tup.getField(afield);
+        int currentInt = intField.getValue();
+        String gbfieldString;
+        if (gbfield == NO_GROUPING) {
+            gbfieldString = "";
+        } else {
+            gbfieldString= tup.getField(gbfield).toString();
+        }
+        mergedCount++;
+
+        switch (what) {
+            case MIN:
+                if (aggregatedValues.get(gbfieldString) == null) {
+                    aggregatedValues.put(gbfieldString, currentInt);
+                } else {
+                    aggregatedValues.put(gbfieldString, Math.min(currentInt, aggregatedValues.get(gbfieldString)));
+                }
+                break;
+            case AVG:
+                if (aggregatedValues.get(gbfieldString) == null) {
+                    aggregatedValues.put(gbfieldString, currentInt);
+                } else {
+                    // pre incremented counter - we take into account the current merging value in that counter
+                    // weight aggregatedValue by number of ints it represents
+                    aggregatedValues.put(gbfieldString, ((mergedCount - 1) * aggregatedValues.get(gbfieldString) + currentInt) / mergedCount);
+                }
+                break;
+            case SUM:
+                if (aggregatedValues.get(gbfieldString) == null) {
+                    aggregatedValues.put(gbfieldString, currentInt);
+                } else {
+                    aggregatedValues.put(gbfieldString, aggregatedValues.get(gbfieldString) + currentInt);
+                }
+                break;
+            case MAX:
+                if (aggregatedValues.get(gbfieldString) == null) {
+                    aggregatedValues.put(gbfieldString, currentInt);
+                } else {
+                    aggregatedValues.put(gbfieldString, Math.max(currentInt, aggregatedValues.get(gbfieldString)));
+                }
+                break;
+            case COUNT:
+                aggregatedValues.put(gbfieldString, mergedCount);
+                break;
+            case SC_AVG:
+                // how do we structure this? see comment in Aggregator
+                break;
+            case SUM_COUNT:
+                // how do we structure this? see comment in Aggregator
+                break;
+        }
     }
 
     /**
@@ -47,8 +119,57 @@ public class IntegerAggregator implements Aggregator {
      */
     public DbIterator iterator() {
         // some code goes here
-        throw new
-        UnsupportedOperationException("please implement me for lab3");
+//        throw new
+//        UnsupportedOperationException("please implement me for lab3");
+
+        // Return TupleIterator - need tuple desc and tuple iterable
+        // need to build tuple desc and iterable since I just have strings and values
+        // TODO add no gorup case?
+        // TODO add support for the weird aggs?
+
+        LinkedList<Tuple> tuples = new LinkedList<>();
+        Type[] types;
+        String[] fieldNames;
+
+        if (gbfield == NO_GROUPING) {
+            types = new Type[]{Type.INT_TYPE};
+            fieldNames = new String[]{what.toString()};
+        } else {
+            types = new Type[]{gbfieldtype, Type.INT_TYPE};
+            fieldNames = new String[]{"AGGREGATE_VALUE", what.toString()};
+        }
+
+        TupleDesc td = new TupleDesc(types, fieldNames);
+        Tuple tuple;
+
+        for (Map.Entry<String, Integer> entry : aggregatedValues.entrySet()) {
+            tuple = new Tuple(td);
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+
+            switch (gbfieldtype) {
+                case INT_TYPE:
+                    if (gbfield == NO_GROUPING) {
+                        tuple.setField(0, new IntField(value));
+                    } else {
+                        tuple.setField(0, new IntField(Integer.parseInt(key)));
+                        tuple.setField(1, new IntField(value));
+                    }
+                    break;
+                case STRING_TYPE:
+                    if (gbfield == NO_GROUPING) {
+                        tuple.setField(0, new IntField(value));
+                    } else {
+                        tuple.setField(0, new StringField(key, Type.STRING_LEN));
+                        tuple.setField(1, new IntField(value));
+                    }
+                    break;
+            }
+
+            tuples.add(tuple);
+        }
+
+        return new TupleIterator(td, tuples);
     }
 
 }
