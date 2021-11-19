@@ -46,14 +46,16 @@ public class Aggregate extends Operator {
         this.aggIterator = null;
 
         TupleDesc fedTupleDesc = child.getTupleDesc();
+        Type gbFieldType;
         this.aFieldName = fedTupleDesc.getFieldName(afield);
         if (gfield != -1) {
             this.gFieldName = fedTupleDesc.getFieldName(gfield);
+            gbFieldType = fedTupleDesc.getFieldType(gfield);
         } else {
             this.gFieldName = null;
+            gbFieldType = null;
         }
 
-        Type gbFieldType = fedTupleDesc.getFieldType(gfield);
         Type aFieldType = fedTupleDesc.getFieldType(afield);
         if (aFieldType == Type.INT_TYPE) {
             if (gfield == -1) {
