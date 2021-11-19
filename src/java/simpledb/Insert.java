@@ -12,6 +12,7 @@ public class Insert extends Operator {
     private TransactionId tid;
     private DbIterator child;
     private int tableId;
+    private boolean inserted;
 
     /**
      * Constructor.
@@ -32,7 +33,7 @@ public class Insert extends Operator {
         this.tid = t;
         this.child = child;
         this.tableId = tableId;
-
+        inserted = false;
 
     }
 
@@ -47,6 +48,7 @@ public class Insert extends Operator {
         // some code goes here
         super.open();
         child.open();
+        inserted = false;
     }
 
     public void close() {
@@ -75,6 +77,9 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
+        if (inserted) {
+            return null;
+        }
         int cnt = 0;
         while (child.hasNext()) {
             Tuple t = child.next();
@@ -87,6 +92,7 @@ public class Insert extends Operator {
         }
         Tuple results = new Tuple(getTupleDesc());
         results.setField(0, new IntField(cnt));
+        inserted = true;
         return results;
     }
 
