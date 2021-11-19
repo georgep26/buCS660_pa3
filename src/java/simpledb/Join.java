@@ -117,8 +117,12 @@ public class Join extends Operator {
 
         if (child1 == null || child2 == null) return null;
         if (current == null) {
-            if (child1.hasNext()) current = child1.next();
-            else return null;
+            if (child1.hasNext()) {
+                current = child1.next();
+            } else {
+                return null;
+            }
+            
         }
         while (true) {
             while (child2.hasNext()) {
@@ -139,8 +143,11 @@ public class Join extends Operator {
                     return ans;
                 }
             }
-            if (child1.hasNext()) current = child1.next();
-            else return null;
+            if (child1.hasNext()) {
+                current = child1.next();
+            } else {
+                return null;
+            }
             child2.rewind();
         }
     }
