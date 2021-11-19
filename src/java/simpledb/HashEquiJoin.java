@@ -124,11 +124,6 @@ public class HashEquiJoin extends Operator {
                 return combineTuples();                
             }
         }
-        // child2.rewind();
-        // if (child1.hasNext()) {
-        //     createMap();
-        //     return fetchNext();
-        // }
 
         return null;
     }

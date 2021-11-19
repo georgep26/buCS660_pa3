@@ -115,32 +115,31 @@ public class Join extends Operator {
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
 
-        if (child1 == null || child2 == null) return null;
+        if (child1 == null || child2 == null) {
+            return null;
+        }
         if (current == null) {
             if (child1.hasNext()) {
                 current = child1.next();
-            } else {
-                return null;
-            }
-            
+            } 
         }
         while (true) {
             while (child2.hasNext()) {
                 Tuple t2 = child2.next();
                 if (p.filter(current, t2)) {
-                    Tuple ans = new Tuple(getTupleDesc());
+                    Tuple combinedTuple = new Tuple(getTupleDesc());
                     int pos = 0;
-                    Iterator<Field> fIter = current.fields();
-                    while (fIter.hasNext()) {
-                        ans.setField(pos, fIter.next());
+                    Iterator<Field> fieldIter = current.fields();
+                    while (fieldIter.hasNext()) {
+                        combinedTuple.setField(pos, fieldIter.next());
                         pos ++;
                     }
-                    fIter = t2.fields();
-                    while (fIter.hasNext()) {
-                        ans.setField(pos, fIter.next());
+                    fieldIter = t2.fields();
+                    while (fieldIter.hasNext()) {
+                        combinedTuple.setField(pos, fieldIter.next());
                         pos ++;
                     }
-                    return ans;
+                    return combinedTuple;
                 }
             }
             if (child1.hasNext()) {
