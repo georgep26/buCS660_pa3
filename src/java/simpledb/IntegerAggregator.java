@@ -15,7 +15,6 @@ public class IntegerAggregator implements Aggregator {
     private int afield;
     private Type gbfieldtype;
     private Op what;
-    private Integer aggregatedValue;
     private HashMap<String, Double> aggregatedValues;
     private HashMap<String, Integer> mergedCount;
 
@@ -53,11 +52,6 @@ public class IntegerAggregator implements Aggregator {
      *            the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        // some code goes here
-        // for the passed aggregation column and aggregator, add tuple to an aggregated field
-        // field is of type int
-        // TODO: COUNT IS WRONG!! if we have tuples from multiple groups we will have an issue
-
 
         IntField intField = (IntField) tup.getField(afield);
         double currentInt = intField.getValue();
@@ -125,13 +119,6 @@ public class IntegerAggregator implements Aggregator {
      */
     public DbIterator iterator() {
         // some code goes here
-//        throw new
-//        UnsupportedOperationException("please implement me for lab3");
-
-        // Return TupleIterator - need tuple desc and tuple iterable
-        // need to build tuple desc and iterable since I just have strings and values
-        // TODO add no gorup case?
-        // TODO add support for the weird aggs?
 
         LinkedList<Tuple> tuples = new LinkedList<>();
         Type[] types;
