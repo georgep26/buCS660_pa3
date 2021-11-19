@@ -1,11 +1,23 @@
 package simpledb;
 
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+
+    private int gbfield;
+    private int afield;
+    private Type gbfieldtype;
+    private Op what;
+    private Integer aggregatedValue;
+    private HashMap<String, Integer> mergedCount;
+    private HashMap<String, Integer> aggregatedValues;
 
     /**
      * Aggregate constructor
@@ -18,6 +30,12 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+        this.gbfield = gbfield;
+        this.afield = afield;
+        this.gbfieldtype = gbfieldtype;
+        this.what = what;
+        aggregatedValues = new HashMap<>();
+        mergedCount = new HashMap<>();
     }
 
     /**
@@ -25,7 +43,23 @@ public class StringAggregator implements Aggregator {
      * @param tup the Tuple containing an aggregate field and a group-by field
      */
     public void mergeTupleIntoGroup(Tuple tup) {
-        // some code goes here
+
+        String gbfieldString;
+        if (gbfield == NO_GROUPING) {
+            gbfieldString = "";
+        } else {
+            gbfieldString= tup.getField(gbfield).toString();
+        }
+
+        mergedCount.putIfAbsent(gbfieldString, 0);
+        mergedCount.put(gbfieldString, mergedCount.get(gbfieldString) + 1);
+
+        switch (what) {
+            case COUNT:
+                aggregatedValues.put(gbfieldString, mergedCount.get(gbfieldString));
+                break;
+        }
+
     }
 
     /**
@@ -37,8 +71,47 @@ public class StringAggregator implements Aggregator {
      *   aggregate specified in the constructor.
      */
     public DbIterator iterator() {
-        // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab3");
+        LinkedList<Tuple> tuples = new LinkedList<>();
+        Type[] types;
+        String[] fieldNames;
+
+        if (gbfield == NO_GROUPING) {
+            types = new Type[]{Type.INT_TYPE};
+            fieldNames = new String[]{what.toString()};
+        } else {
+            types = new Type[]{gbfieldtype, Type.INT_TYPE};
+            fieldNames = new String[]{"AGGREGATE_VALUE", what.toString()};
+        }
+
+        TupleDesc td = new TupleDesc(types, fieldNames);
+        Tuple tuple;
+
+        for (Map.Entry<String, Integer> entry : aggregatedValues.entrySet()) {
+            tuple = new Tuple(td);
+            String key = entry.getKey();
+            Integer value = entry.getValue();
+
+            switch (gbfieldtype) {
+                case INT_TYPE:
+                    if (gbfield == NO_GROUPING) {
+                        tuple.setField(0, new IntField(value));
+                    } else {
+                        tuple.setField(0, new IntField(Integer.parseInt(key)));
+                        tuple.setField(1, new IntField(value));
+                    }
+                    break;
+                case STRING_TYPE:
+                    if (gbfield == NO_GROUPING) {
+                        tuple.setField(0, new IntField(value));
+                    } else {
+                        tuple.setField(0, new StringField(key, Type.STRING_LEN));
+                        tuple.setField(1, new IntField(value));
+                    }
+                    break;
+            }
+            tuples.add(tuple);
+        }
+        return new TupleIterator(td, tuples);
     }
 
 }

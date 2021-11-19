@@ -16,8 +16,8 @@ public class IntegerAggregator implements Aggregator {
     private Type gbfieldtype;
     private Op what;
     private Integer aggregatedValue;
-    private Integer mergedCount;
     private HashMap<String, Integer> aggregatedValues;
+    private HashMap<String, Integer> mergedCount;
 
     /**
      * Aggregate constructor
@@ -35,12 +35,14 @@ public class IntegerAggregator implements Aggregator {
      */
 
     public IntegerAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
+
         this.gbfield = gbfield;
         this.afield = afield;
         this.gbfieldtype = gbfieldtype;
         this.what = what;
-        mergedCount = 0;
         aggregatedValues = new HashMap<>();
+        mergedCount = new HashMap<>();
+
     }
 
     /**
@@ -54,7 +56,7 @@ public class IntegerAggregator implements Aggregator {
         // some code goes here
         // for the passed aggregation column and aggregator, add tuple to an aggregated field
         // field is of type int
-        // TODO: switch from one value to adding to hash map according to which group we are currently calculating
+        // TODO: COUNT IS WRONG!! if we have tuples from multiple groups we will have an issue
 
         IntField intField = (IntField) tup.getField(afield);
         int currentInt = intField.getValue();
@@ -64,7 +66,9 @@ public class IntegerAggregator implements Aggregator {
         } else {
             gbfieldString= tup.getField(gbfield).toString();
         }
-        mergedCount++;
+
+        mergedCount.putIfAbsent(gbfieldString, 0);
+        mergedCount.put(gbfieldString, mergedCount.get(gbfieldString) + 1);
 
         switch (what) {
             case MIN:
@@ -80,7 +84,8 @@ public class IntegerAggregator implements Aggregator {
                 } else {
                     // pre incremented counter - we take into account the current merging value in that counter
                     // weight aggregatedValue by number of ints it represents
-                    aggregatedValues.put(gbfieldString, ((mergedCount - 1) * aggregatedValues.get(gbfieldString) + currentInt) / mergedCount);
+                    aggregatedValues.put(gbfieldString, ((mergedCount.get(gbfieldString) - 1) *
+                            aggregatedValues.get(gbfieldString) + currentInt) / mergedCount.get(gbfieldString));
                 }
                 break;
             case SUM:
@@ -98,7 +103,7 @@ public class IntegerAggregator implements Aggregator {
                 }
                 break;
             case COUNT:
-                aggregatedValues.put(gbfieldString, mergedCount);
+                aggregatedValues.put(gbfieldString, mergedCount.get(gbfieldString));
                 break;
             case SC_AVG:
                 // how do we structure this? see comment in Aggregator
