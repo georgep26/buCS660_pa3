@@ -8,6 +8,11 @@ import java.util.*;
 public class Join extends Operator {
 
     private static final long serialVersionUID = 1L;
+    private JoinPredicate p;
+    private DbIterator child1;
+    private DbIterator child2;
+    private Tuple current;
+
 
     /**
      * Constructor. Accepts to children to join and the predicate to join them
@@ -22,11 +27,15 @@ public class Join extends Operator {
      */
     public Join(JoinPredicate p, DbIterator child1, DbIterator child2) {
         // some code goes here
+        this.p = p;
+        this.child1 = child1;
+        this.child2 = child2;
+        this.current = null;
     }
 
     public JoinPredicate getJoinPredicate() {
         // some code goes here
-        return null;
+        return this.p;
     }
 
     /**
@@ -36,7 +45,7 @@ public class Join extends Operator {
      * */
     public String getJoinField1Name() {
         // some code goes here
-        return null;
+        return this.child1.getTupleDesc().getFieldName(p.getField1());
     }
 
     /**
@@ -46,7 +55,7 @@ public class Join extends Operator {
      * */
     public String getJoinField2Name() {
         // some code goes here
-        return null;
+        return this.child1.getTupleDesc().getFieldName(p.getField2());
     }
 
     /**
@@ -55,20 +64,34 @@ public class Join extends Operator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return TupleDesc.merge(child1.getTupleDesc(), child2.getTupleDesc());
     }
 
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
+        if (child1 == null || child2 == null) {
+            throw new NoSuchElementException("Child is null!");
+        }
+        child1.open();
+        child2.open();
+        super.open();
+        current = null;
     }
 
     public void close() {
         // some code goes here
+        child1.close();
+        child2.close();
+        super.close();
+        current = null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
         // some code goes here
+        child1.rewind();
+        child2.rewind();
+        current = null;
     }
 
     /**
@@ -91,18 +114,58 @@ public class Join extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+
+        if (child1 == null || child2 == null) return null;
+        if (current == null) {
+            if (child1.hasNext()) {
+                current = child1.next();
+            } else {
+                return null;
+            }
+            
+        }
+        while (true) {
+            while (child2.hasNext()) {
+                Tuple t2 = child2.next();
+                if (p.filter(current, t2)) {
+                    Tuple ans = new Tuple(getTupleDesc());
+                    int pos = 0;
+                    Iterator<Field> fIter = current.fields();
+                    while (fIter.hasNext()) {
+                        ans.setField(pos, fIter.next());
+                        pos ++;
+                    }
+                    fIter = t2.fields();
+                    while (fIter.hasNext()) {
+                        ans.setField(pos, fIter.next());
+                        pos ++;
+                    }
+                    return ans;
+                }
+            }
+            if (child1.hasNext()) {
+                current = child1.next();
+            } else {
+                return null;
+            }
+            child2.rewind();
+        }
     }
 
     @Override
     public DbIterator[] getChildren() {
         // some code goes here
-        return null;
+        DbIterator[] children = new DbIterator[2];
+        children[0] = child1;
+        children[1] = child2;
+        return children;
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
         // some code goes here
+        child1 = children[0];
+        child2 = children[1];
     }
 
 }
