@@ -15,7 +15,6 @@ public class StringAggregator implements Aggregator {
     private int afield;
     private Type gbfieldtype;
     private Op what;
-    private Integer aggregatedValue;
     private HashMap<String, Integer> mergedCount;
     private HashMap<String, Integer> aggregatedValues;
 
