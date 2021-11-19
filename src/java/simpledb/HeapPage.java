@@ -275,8 +275,9 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1|lab2
-        if (getNumEmptySlots() == 0)
+        if (getNumEmptySlots() == 0) {
             throw new DbException("HeapPage has no empty slots.");
+        }
         int pos = 0;
         while (isSlotUsed(pos)) {
             pos++;
