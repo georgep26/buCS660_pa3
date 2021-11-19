@@ -1,5 +1,7 @@
 package simpledb;
 
+import java.io.IOException;
+
 /**
  * Inserts tuples read from the child operator into the tableId specified in the
  * constructor
@@ -36,7 +38,9 @@ public class Insert extends Operator {
 
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return child.getTupleDesc();
+        String[] names = new String[] {"Inserted"};
+    	Type[] types = new Type[] {Type.INT_TYPE};
+        return new TupleDesc(types, names);
     }
 
     public void open() throws DbException, TransactionAbortedException {
@@ -71,17 +75,30 @@ public class Insert extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        int cnt = 0;
+        while (child.hasNext()) {
+            Tuple t = child.next();
+            try {
+                Database.getBufferPool().insertTuple(tid, tableId, t);
+            } catch (IOException e) {
+                throw new DbException("IO exeption occured when inserting tuple");
+            }
+            cnt++;
+        }
+        Tuple results = new Tuple(getTupleDesc());
+        results.setField(0, new IntField(cnt));
+        return results;
     }
 
     @Override
     public DbIterator[] getChildren() {
         // some code goes here
-        return null;
+        return new DbIterator[] {child};
     }
 
     @Override
     public void setChildren(DbIterator[] children) {
         // some code goes here
+        child = children[0];
     }
 }
