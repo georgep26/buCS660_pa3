@@ -16,7 +16,7 @@ public class IntegerAggregator implements Aggregator {
     private Type gbfieldtype;
     private Op what;
     private Integer aggregatedValue;
-    private HashMap<String, Integer> aggregatedValues;
+    private HashMap<String, Double> aggregatedValues;
     private HashMap<String, Integer> mergedCount;
 
     /**
@@ -58,8 +58,9 @@ public class IntegerAggregator implements Aggregator {
         // field is of type int
         // TODO: COUNT IS WRONG!! if we have tuples from multiple groups we will have an issue
 
+
         IntField intField = (IntField) tup.getField(afield);
-        int currentInt = intField.getValue();
+        double currentInt = intField.getValue();
         String gbfieldString;
         if (gbfield == NO_GROUPING) {
             gbfieldString = "";
@@ -84,8 +85,8 @@ public class IntegerAggregator implements Aggregator {
                 } else {
                     // pre incremented counter - we take into account the current merging value in that counter
                     // weight aggregatedValue by number of ints it represents
-                    aggregatedValues.put(gbfieldString, ((mergedCount.get(gbfieldString) - 1) *
-                            aggregatedValues.get(gbfieldString) + currentInt) / mergedCount.get(gbfieldString));
+                    aggregatedValues.put(gbfieldString, (((mergedCount.get(gbfieldString) - 1) *
+                            aggregatedValues.get(gbfieldString)) + currentInt) / mergedCount.get(gbfieldString));
                 }
                 break;
             case SUM:
@@ -103,7 +104,7 @@ public class IntegerAggregator implements Aggregator {
                 }
                 break;
             case COUNT:
-                aggregatedValues.put(gbfieldString, mergedCount.get(gbfieldString));
+                aggregatedValues.put(gbfieldString, Double.valueOf(mergedCount.get(gbfieldString)));
                 break;
             case SC_AVG:
                 // how do we structure this? see comment in Aggregator
@@ -147,28 +148,24 @@ public class IntegerAggregator implements Aggregator {
         TupleDesc td = new TupleDesc(types, fieldNames);
         Tuple tuple;
 
-        for (Map.Entry<String, Integer> entry : aggregatedValues.entrySet()) {
+        for (Map.Entry<String, Double> entry : aggregatedValues.entrySet()) {
             tuple = new Tuple(td);
             String key = entry.getKey();
-            Integer value = entry.getValue();
+            Double value = entry.getValue();
 
-            switch (gbfieldtype) {
-                case INT_TYPE:
-                    if (gbfield == NO_GROUPING) {
-                        tuple.setField(0, new IntField(value));
-                    } else {
+            if (gbfieldtype != null) {
+                switch (gbfieldtype) {
+                    case INT_TYPE:
                         tuple.setField(0, new IntField(Integer.parseInt(key)));
-                        tuple.setField(1, new IntField(value));
-                    }
-                    break;
-                case STRING_TYPE:
-                    if (gbfield == NO_GROUPING) {
-                        tuple.setField(0, new IntField(value));
-                    } else {
+                        tuple.setField(1, new IntField(value.intValue()));
+                        break;
+                    case STRING_TYPE:
                         tuple.setField(0, new StringField(key, Type.STRING_LEN));
-                        tuple.setField(1, new IntField(value));
-                    }
-                    break;
+                        tuple.setField(1, new IntField(value.intValue()));
+                        break;
+                }
+            } else {
+                tuple.setField(0, new IntField(value.intValue()));
             }
 
             tuples.add(tuple);
